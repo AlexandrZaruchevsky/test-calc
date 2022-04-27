@@ -1,15 +1,13 @@
 package ru.az.test;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Calc {
 
-    public final static String PATTERN_ARABIC = "^(\\s*[0-9]+\\s*[\\+\\-\\*\\/]\\s*[0-9]+\\s*)$";
-    public final static String PATTERN_ROME = "^(\\s*([NIVX]+|\\s*)+\\s*[\\+\\-\\*\\/]\\s*([NIVX]+|\\s*)+\\s*)$";
+    public final static String PATTERN_ARABIC = "^(\\s*[0-9]+\\s*[+\\-*/]\\s*[0-9]+\\s*)$";
+    public final static String PATTERN_ROME = "^(\\s*([NIVX]+|\\s*)+\\s*[+\\-*/]\\s*([NIVX]+|\\s*)+\\s*)$";
     public final static Map<String, Integer> ROME_TO_ARABIC = new HashMap<>() {{
         put("N", 0);
         put("I", 1);
@@ -66,7 +64,7 @@ public class Calc {
     }
 
     private static String calcRome(String input) throws Exception {
-        String[] split = input.split("\\s*[\\+\\-\\*\\/]{1}\\s*");
+        String[] split = input.split("\\s*[+\\-*/]\\s*");
         Matcher matcher = getMatcher(input);
         String action = "";
         while (matcher.find()) {
@@ -74,6 +72,7 @@ public class Calc {
         }
         Integer a = ROME_TO_ARABIC.get(spaceOf(split[0]));
         Integer b = ROME_TO_ARABIC.get(spaceOf(split[1]));
+        validateArgs(a, b);
         if (a == null || b == null) {
             throw new Exception("Illegal parameters");
         }
@@ -83,7 +82,7 @@ public class Calc {
     }
 
     private static String calcArabic(String input) throws Exception {
-        String[] split = input.split("\\s*[\\+\\-\\*\\/]{1}\\s*");
+        String[] split = input.split("\\s*[+\\-*/]\\s*");
         Matcher matcher = getMatcher(input);
         String action = "";
         while (matcher.find()) {
@@ -91,35 +90,47 @@ public class Calc {
         }
         Integer a = Integer.parseInt(spaceOf(split[0]));
         Integer b = Integer.parseInt(spaceOf(split[1]));
+        validateArgs(a, b);
         int result = calculate(action, a, b);
         return spaceOf(split[0]) + " " + action + " " + spaceOf(split[1]) + " = " + result;
     }
 
+    private static String validateArg(Integer a, String element) {
+        if (a < 1 || a > 10) return String.format("Illegal %s argument = %d (0 < argument < 11).", element, a);
+        return null;
+    }
+
+    private static void validateArgs(Integer a, Integer b) throws Exception {
+        List<String> exceptions = new ArrayList<>();
+        String e = validateArg(a, "first");
+        if (e != null) exceptions.add(e);
+        e = validateArg(b, "second");
+        if (e != null) exceptions.add(e);
+        if (exceptions.size() > 0) {
+            String ex = " -> \n[\n\t"+String.join("\n\t", exceptions)+"\n]";
+            throw new Exception(ex);
+        }
+    }
+
     private static Matcher getMatcher(String input) {
-        Pattern pattern = Pattern.compile("\\s*[\\+\\-\\*\\/]\\s*");
+        Pattern pattern = Pattern.compile("\\s*[+\\-*/]\\s*");
         return pattern.matcher(input);
     }
 
     private static int calculate(String action, Integer a, Integer b) throws Exception {
-        int result;
         switch (action) {
             case "+":
-                result = a + b;
-                break;
+                return a + b;
             case "-":
-                result = a - b;
-                break;
+                return a - b;
             case "*":
-                result = a * b;
-                break;
+                return a * b;
             case "/":
                 if (b == 0) throw new Exception("Dived by zero");
-                result = a / b;
-                break;
+                return a / b;
             default:
                 throw new Exception("Illegal action");
         }
-        return result;
     }
 
     private static short getNumberType(String input) throws Exception {
